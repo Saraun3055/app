@@ -1,25 +1,97 @@
 {
   "expo": {
-    "name": "geofix-mobile",
+    "name": "GeoFix",
     "slug": "geofix-mobile",
+    "scheme": "geofix",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.geofix.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "GeoFix uses your location to show nearby verified workers and to confirm the job site.",
+        "NSCameraUsageDescription": "GeoFix uses the camera so you can attach photos of the problem and workers can upload ID for verification.",
+        "NSPhotoLibraryUsageDescription": "GeoFix needs access to your photos so you can attach existing pictures of the problem to a request.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "GeoFix uses your location to show nearby verified workers and to confirm the job site."
+      }
     },
     "android": {
+      "package": "com.geofix.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#7A1B1C",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "POST_NOTIFICATIONS",
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "GeoFix needs access to your photos so you can attach pictures of the problem to a request.",
+          "cameraPermission": "GeoFix uses the camera so you can attach photos of the problem and upload ID for verification."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "GeoFix uses your location to show nearby verified workers and to confirm the job site."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#7A1B1C"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./node_modules/@expo-google-fonts/sora/400Regular/Sora_400Regular.ttf",
+            "./node_modules/@expo-google-fonts/sora/600SemiBold/Sora_600SemiBold.ttf",
+            "./node_modules/@expo-google-fonts/sora/700Bold/Sora_700Bold.ttf",
+            "./node_modules/@expo-google-fonts/archivo/400Regular/Archivo_400Regular.ttf",
+            "./node_modules/@expo-google-fonts/archivo/500Medium/Archivo_500Medium.ttf",
+            "./node_modules/@expo-google-fonts/archivo/600SemiBold/Archivo_600SemiBold.ttf",
+            "./node_modules/@expo-google-fonts/archivo/700Bold/Archivo_700Bold.ttf",
+            "./node_modules/@expo-google-fonts/jetbrains-mono/400Regular/JetBrainsMono_400Regular.ttf",
+            "./node_modules/@expo-google-fonts/jetbrains-mono/500Medium/JetBrainsMono_500Medium.ttf",
+            "./node_modules/@expo-google-fonts/jetbrains-mono/700Bold/JetBrainsMono_700Bold.ttf"
+          ]
+        }
+      ],
+      "@react-native-community/datetimepicker"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      }
     }
   }
 }
