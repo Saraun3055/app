@@ -16,7 +16,10 @@ const FILTERS: (RequestStatus | 'all')[] = [
   'searching',
   'pending_worker_response',
   'accepted',
+  'on_the_way',
+  'arrived',
   'in_progress',
+  'rejected',
   'completed',
   'cancelled',
 ];
@@ -29,6 +32,7 @@ const LABEL: Record<string, string> = {
   on_the_way: 'On the way',
   arrived: 'Arrived',
   in_progress: 'In progress',
+  rejected: 'Rejected',
   completed: 'Completed',
   cancelled: 'Cancelled',
 };
@@ -39,15 +43,17 @@ export default function AdminRequests() {
   const { data, isLoading, refetch, isRefetching } = useAllRequests(
     filter === 'all' ? undefined : filter,
   );
+  const { data: allData } = useAllRequests();
 
   const requests = useMemo(() => data ?? [], [data]);
+  const allRequests = useMemo(() => allData ?? [], [allData]);
 
   const revenue = useMemo(
     () =>
-      requests
+      allRequests
         .filter((r) => r.paymentStatus === 'paid')
         .reduce((sum, r) => sum + (r.bill?.total ?? 0), 0),
-    [requests],
+    [allRequests],
   );
 
   return (
@@ -59,8 +65,11 @@ export default function AdminRequests() {
       <View className="px-5 pt-14 pb-3">
         <Text className="font-display text-2xl text-primary">Requests</Text>
         <Text className="text-muted-fg text-xs mt-1">
-          {requests.length} shown · ₹{revenue} collected
+          {filter === 'all'
+            ? `${requests.length} requests`
+            : `${requests.length} of ${allRequests.length} requests`}
         </Text>
+        <Text className="text-muted-fg text-xs mt-0.5">₹{revenue} revenue (all requests)</Text>
       </View>
 
       <View className="flex-row px-5 mb-4 flex-wrap">
@@ -111,7 +120,7 @@ export default function AdminRequests() {
                 size="sm"
                 variant="outline"
                 className="mt-3"
-                onPress={() => router.push(`/request/${request.id}`)}
+                onPress={() => router.push(`/(admin)/request/${request.id}`)}
               />
             </View>
           ))

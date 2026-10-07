@@ -1,18 +1,27 @@
-import React, { useState } from 'react';
-import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { RequestCard } from '@/components/RequestCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
+import { Chip } from '@/components/ui/Chip';
+import { StatusBadge } from '@/components/ui/Badge';
+import { JobProgressStepper } from '@/components/JobProgressStepper';
 import { OnlineToggle } from '@/components/OnlineToggle';
 import { SkeletonCard } from '@/components/ui/Skeleton';
-import { useAcceptRequest, useRejectRequest, useWorkerIncoming } from '@/hooks/use-requests';
+import { useAcceptRequest, useRejectRequest, useWorkerIncoming, useWorkerJobs } from '@/hooks/use-requests';
 import { useBackgroundChangeNotification } from '@/hooks/use-notifications';
 import { useSetAvailability, useWorkerProfile } from '@/hooks/use-workers';
+import { haversine } from '@/lib/geo';
 import { colors } from '@/constants/theme';
 import { useAuthStore } from '@/stores/auth';
 import type { ServiceRequestDoc } from '@/lib/types';
+
+const SORTS = ['Nearby', 'Same pincode', 'All Madurai'] as const;
+type SortKey = (typeof SORTS)[number];
+
+const ACTIVE_STATUSES: string[] = ['accepted', 'on_the_way', 'arrived', 'in_progress'];
 
 export default function Incoming() {
   const router = useRouter();
@@ -20,13 +29,51 @@ export default function Incoming() {
 
   const { data: profile, refetch: refetchProfile } = useWorkerProfile(user?.uid);
   const { data, isLoading, refetch, isRefetching } = useWorkerIncoming(user?.uid);
+  const { data: jobs } = useWorkerJobs(user?.uid);
   const accept = useAcceptRequest();
   const reject = useRejectRequest();
   const availability = useSetAvailability();
 
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [sort, setSort] = useState<SortKey>('Nearby');
 
-  const requests = data ?? [];
+  const requests = useMemo(() => data ?? [], [data]);
+
+  const distanceFor = (request: ServiceRequestDoc) => {
+    const origin = profile?.g?.geopoint;
+    if (!origin || !request.customerLocation) return null;
+    return haversine(origin, request.customerLocation);
+  };
+
+  const sortedRequests = useMemo(() => {
+    const list = [...requests];
+    if (sort === 'All Madurai') {
+      return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    }
+    if (sort === 'Same pincode') {
+      const mine = profile?.pincode;
+      if (!mine) return [];
+      return list
+        .filter((r) => r.customerPincode && r.customerPincode === mine)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    }
+    const origin = profile?.g?.geopoint;
+    const dist = (r: ServiceRequestDoc) =>
+      origin && r.customerLocation ? haversine(origin, r.customerLocation) : null;
+    return list.sort((a, b) => {
+      const da = dist(a);
+      const db = dist(b);
+      if (da === null && db === null) return b.createdAt.localeCompare(a.createdAt);
+      if (da === null) return 1;
+      if (db === null) return -1;
+      return da - db;
+    });
+  }, [requests, sort, profile]);
+
+  const activeJobs = useMemo(
+    () => (jobs ?? []).filter((j) => ACTIVE_STATUSES.includes(j.status)),
+    [jobs],
+  );
 
   const countChanged = (a: ServiceRequestDoc[], b: ServiceRequestDoc[]) => a.length === b.length;
   const buildNewRequestNotice = (next: ServiceRequestDoc[]) => {
@@ -35,7 +82,7 @@ export default function Incoming() {
     return {
       title: 'New job near you',
       body: `${newest.category} · ${newest.customerArea ?? 'your area'}`,
-      url: '/incoming',
+      url: '/(worker)/incoming',
     };
   };
 
@@ -91,19 +138,50 @@ export default function Incoming() {
         />
       </View>
 
+      {activeJobs.length ? (
+        <View className="px-5 mb-6">
+          <Text className="font-display text-lg text-primary mb-3">Your active jobs</Text>
+          {activeJobs.map((job) => (
+            <Pressable
+              key={job.id}
+              accessibilityRole="button"
+              onPress={() => router.push(`/job/${job.id}`)}
+              className="border border-border rounded-lg p-4 mb-3"
+            >
+              <View className="flex-row items-start justify-between">
+                <Text className="text-foreground font-sans flex-1 pr-2">{job.title}</Text>
+                <StatusBadge status={job.status} />
+              </View>
+              <Text className="text-muted-fg text-xs mt-1">{job.customerName}</Text>
+              <View className="mt-3">
+                <JobProgressStepper status={job.status} />
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+
+      <View className="flex-row px-5 mb-3">
+        {SORTS.map((option) => (
+          <Chip key={option} label={option} selected={sort === option} onPress={() => setSort(option)} />
+        ))}
+      </View>
+
       <View className="px-5">
         {isLoading ? (
           <>
             <SkeletonCard />
             <SkeletonCard />
           </>
-        ) : requests.length === 0 ? (
+        ) : sortedRequests.length === 0 ? (
           <EmptyState
             title="No new jobs"
             body={
-              profile?.isOnline
-                ? 'You are online. Requests in your area will appear here the moment they arrive.'
-                : 'Go online to start receiving requests from customers near you.'
+              requests.length === 0
+                ? profile?.isOnline
+                  ? 'You are online. Requests in your area will appear here the moment they arrive.'
+                  : 'Go online to start receiving requests from customers near you.'
+                : 'No waiting requests match this filter right now.'
             }
             action={
               profile?.isOnline ? undefined : (
@@ -115,36 +193,44 @@ export default function Incoming() {
             }
           />
         ) : (
-          requests.map((request) => (
-            <RequestCard
-              key={request.id}
-              request={request}
-              onPress={() => router.push(`/job/${request.id}`)}
-              footer={
-                <View className="flex-row">
-                  <View className="flex-1 mr-2">
-                    <Button
-                      label="Accept →"
-                      fullWidth
-                      loading={busyId === request.id}
-                      onPress={() => onAccept(request.id)}
-                    />
+          sortedRequests.map((request) => {
+            const distance = distanceFor(request);
+            return (
+              <RequestCard
+                key={request.id}
+                request={request}
+                onPress={() => router.push(`/job/${request.id}`)}
+                footer={
+                  <View>
+                    {distance !== null ? (
+                      <Text className="text-muted-fg text-xs mb-2">{(distance / 1000).toFixed(1)} km</Text>
+                    ) : null}
+                    <View className="flex-row">
+                      <View className="flex-1 mr-2">
+                        <Button
+                          label="Accept →"
+                          fullWidth
+                          loading={busyId === request.id}
+                          onPress={() => onAccept(request.id)}
+                        />
+                      </View>
+                      <View className="flex-1">
+                        <Button
+                          label="Decline"
+                          fullWidth
+                          variant="outline"
+                          onPress={() => onReject(request.id)}
+                        />
+                      </View>
+                    </View>
                   </View>
-                  <View className="flex-1">
-                    <Button
-                      label="Decline"
-                      fullWidth
-                      variant="outline"
-                      onPress={() => onReject(request.id)}
-                    />
-                  </View>
-                </View>
-              }
-            />
-          ))
+                }
+              />
+            );
+          })
         )}
 
-        {requests.length ? (
+        {sortedRequests.length ? (
           <Text className="text-muted-fg text-xs mt-2">
             First to accept gets the job. Distances are shown from your saved work location.
           </Text>

@@ -31,7 +31,11 @@ export default function CustomerLayout() {
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <UserRound size={size} color={color} /> }}
+        options={{
+          title: 'Profile',
+          href: '/(customer)/profile',
+          tabBarIcon: ({ color, size }) => <UserRound size={size} color={color} />,
+        }}
       />
       <Tabs.Screen name="new/workers" options={{ href: null }} />
       <Tabs.Screen name="requests/[id]" options={{ href: null }} />

@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AlertTriangle } from 'lucide-react-native';
 
@@ -20,12 +20,23 @@ export default function WorkerDashboard() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
 
-  const { data: profile, isLoading: profileLoading } = useWorkerProfile(user?.uid);
-  const { data: incoming } = useWorkerIncoming(user?.uid);
-  const { data: jobs } = useWorkerJobs(user?.uid);
+  const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useWorkerProfile(user?.uid);
+  const { data: incoming, refetch: refetchIncoming } = useWorkerIncoming(user?.uid);
+  const { data: jobs, refetch: refetchJobs } = useWorkerJobs(user?.uid);
 
   const availability = useSetAvailability();
   const accept = useAcceptRequest();
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    const started = Date.now();
+    void Promise.all([refetchProfile(), refetchIncoming(), refetchJobs()]).finally(() => {
+      const wait = 600 - (Date.now() - started);
+      setTimeout(() => setRefreshing(false), Math.max(0, wait));
+    });
+  };
 
   const recentJobs = useMemo(() => (jobs ?? []).slice(0, 4), [jobs]);
   const preview = useMemo(() => (incoming ?? []).slice(0, 3), [incoming]);
@@ -51,7 +62,7 @@ export default function WorkerDashboard() {
       className="flex-1 bg-background"
       contentContainerStyle={{ paddingBottom: 40 }}
       refreshControl={
-        <RefreshControl refreshing={false} onTouchEnd={() => undefined} tintColor={colors.primary} />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
       }
     >
       <View className="px-5 pt-14 pb-4">
@@ -185,10 +196,17 @@ export default function WorkerDashboard() {
       <View className="px-5">
         <Text className="font-display text-lg text-primary mb-3">Recent jobs</Text>
         {activeJobs.length ? (
-          <View className="mb-4">
-            <Text className="text-muted-fg text-xs uppercase tracking-wide mb-2">
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-muted-fg text-xs uppercase tracking-wide">
               {activeJobs.length} in progress
             </Text>
+            <Pressable
+              accessibilityRole="link"
+              hitSlop={6}
+              onPress={() => router.push('/(worker)/jobs')}
+            >
+              <Text className="text-primary text-xs font-sans">View jobs →</Text>
+            </Pressable>
           </View>
         ) : null}
 
@@ -196,7 +214,12 @@ export default function WorkerDashboard() {
           <Text className="text-muted-fg text-sm">Completed jobs will show up here.</Text>
         ) : (
           recentJobs.map((job) => (
-            <View key={job.id} className="border border-border rounded-lg p-4 mb-3">
+            <Pressable
+              key={job.id}
+              accessibilityRole="button"
+              onPress={() => router.push(`/job/${job.id}`)}
+              className="border border-border rounded-lg p-4 mb-3"
+            >
               <View className="flex-row items-start justify-between">
                 <Text className="text-foreground font-sans flex-1 pr-2">{job.title}</Text>
                 <StatusBadge status={job.status} />
@@ -205,7 +228,7 @@ export default function WorkerDashboard() {
               <View className="mt-3">
                 <PaymentBadge status={job.paymentStatus} />
               </View>
-            </View>
+            </Pressable>
           ))
         )}
       </View>

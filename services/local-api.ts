@@ -156,7 +156,7 @@ export async function setWorkerAvailability(userId: string, isOnline: boolean): 
 
 export async function updateWorkerProfileApi(
   userId: string,
-  data: { categorySkills: string[]; availableSlots: { day: string; from: string; to: string }[]; address?: string; pincode?: string; area?: string },
+  data: { categorySkills: string[]; availableSlots: { day: string; from: string; to: string }[]; address?: string; pincode?: string; area?: string; bio?: string },
 ): Promise<WorkerProfileDoc> {
   return api.patch<WorkerProfileDoc>(`/workers/${encodeURIComponent(userId)}/profile`, data)
 }

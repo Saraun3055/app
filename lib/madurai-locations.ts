@@ -465,6 +465,7 @@ export const MADURAI_PINCODES: string[] = [...new Set(MADURAI_LOCATIONS.map((l) 
 /** Normalise user input: lower-case, unify dots/slashes to spaces. */
 function normalize(input: string): string {
   return input
+    .replace(/[\uFF10-\uFF19]/g, (d) => String.fromCharCode(d.charCodeAt(0) - 0xfee0))
     .toLowerCase()
     .replace(/[.\-_/]/g, ' ')
     .replace(/\s+/g, ' ')
@@ -492,18 +493,27 @@ export function getLocationByPincode(pincode: string): MaduraiLocation | undefin
  * `A Ammapatti`). Pincodes rank first, then exact name, then partial name.
  */
 export function searchMaduraiLocations(query: string, limit = 8): MaduraiLocation[] {
-  const q = normalize(query)
-  if (!q) return []
-  const isNumeric = /^\d{1,6}$/.test(q)
+  const raw = normalize(query)
+  if (!raw) return []
+
+  const digits = raw.replace(/\D+/g, '')
+  const isPincodeQuery = digits.length > 0 && raw.replace(/[\s-]+/g, '') === digits
+
+  if (isPincodeQuery) {
+    const code = digits.slice(0, 6)
+    return MADURAI_LOCATIONS.filter((l) => l.pincode.startsWith(code))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .slice(0, limit)
+  }
+
+  const code = digits.length >= 3 ? digits.slice(0, 6) : ''
   const scored = MADURAI_LOCATIONS.map((loc) => {
     const name = normalize(loc.name)
     let score = -1
-    if (isNumeric && loc.pincode.startsWith(q)) score = 0
-    else if (!isNumeric) {
-      if (name === q) score = 10
-      else if (name.startsWith(q)) score = 7
-      else if ((name + ' ' + loc.pincode).includes(q)) score = 4
-    }
+    if (name === raw) score = 10
+    else if (name.startsWith(raw)) score = 7
+    else if ((name + ' ' + loc.pincode).includes(raw)) score = 4
+    else if (code && loc.pincode.startsWith(code)) score = 2
     return { loc, score }
   })
   return scored
@@ -511,6 +521,30 @@ export function searchMaduraiLocations(query: string, limit = 8): MaduraiLocatio
     .sort((a, b) => b.score - a.score || a.loc.name.localeCompare(b.loc.name))
     .slice(0, limit)
     .map((s) => s.loc)
+}
+
+const POPULAR_QUERIES = [
+  'Simmakkal',
+  'Tallakulam',
+  'Thiruparankundram',
+  'Anna Nagar',
+  'Melur',
+  'Usilampatti',
+  'Tirumangalam',
+  'Alanganallur',
+  'Vadipatti',
+  'Sholavandan',
+]
+
+/** Well-known areas shown before the customer starts typing. */
+export function popularMaduraiLocations(limit = 12): MaduraiLocation[] {
+  const out: MaduraiLocation[] = []
+  for (const q of POPULAR_QUERIES) {
+    const hit = searchMaduraiLocations(q, 1)[0]
+    if (hit && !out.some((x) => x.pincode === hit.pincode && x.name === hit.name)) out.push(hit)
+    if (out.length >= limit) break
+  }
+  return out
 }
 
 /** Resolve a pincode or area name to a single anchor location. */

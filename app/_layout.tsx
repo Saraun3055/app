@@ -26,6 +26,8 @@ import {
 import '../global.css';
 import { useAuthStore } from '@/stores/auth';
 import { useAuthInit } from '@/hooks/use-auth';
+import { usePushRegistration } from '@/hooks/use-push';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { loadNotifications } from '@/lib/notifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -74,6 +76,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const init = useAuthStore((s) => s.init);
   const status = useAuthStore((s) => s.status);
   useAuthInit();
+  usePushRegistration();
 
   React.useEffect(() => {
     void init();
@@ -111,7 +114,9 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <AuthGate>
           <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false }} />
+          <ErrorBoundary>
+            <Stack screenOptions={{ headerShown: false }} />
+          </ErrorBoundary>
         </AuthGate>
       </SafeAreaProvider>
     </QueryClientProvider>

@@ -2,7 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Input } from '@/components/ui/Input';
-import { searchMaduraiLocations, type MaduraiLocation } from '@/lib/madurai-locations';
+import {
+  popularMaduraiLocations,
+  searchMaduraiLocations,
+  type MaduraiLocation,
+} from '@/lib/madurai-locations';
 import { colors } from '@/constants/theme';
 
 type PincodePickerProps = {
@@ -15,7 +19,13 @@ export function PincodePicker({ value, label = 'Area / pincode', onSelect }: Pin
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
 
-  const results = useMemo(() => searchMaduraiLocations(query, 20), [query]);
+  const trimmed = query.trim();
+  const results = useMemo(
+    () => (trimmed ? searchMaduraiLocations(trimmed, 20) : popularMaduraiLocations(12)),
+    [trimmed],
+  );
+  const digits = trimmed.replace(/\D+/g, '');
+  const outsideCoverage = digits.length >= 4 && results.length === 0;
 
   return (
     <>
@@ -41,29 +51,47 @@ export function PincodePicker({ value, label = 'Area / pincode', onSelect }: Pin
                 placeholderTextColor={colors.mutedFg}
                 value={query}
                 onChangeText={setQuery}
+                keyboardType="default"
                 autoFocus
               />
+              <Text className="text-muted-fg text-xs mt-1">Madurai region pincodes (625xxx) only</Text>
             </View>
 
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 32 }}>
               {results.length === 0 ? (
-                <Text className="text-muted-fg text-center p-6">No matching areas</Text>
+                <View className="p-6">
+                  <Text className="text-foreground font-sans text-center mb-1">
+                    {outsideCoverage ? `No coverage for ${digits}` : 'No matching areas'}
+                  </Text>
+                  <Text className="text-muted-fg text-xs text-center">
+                    {outsideCoverage
+                      ? 'We only serve Madurai district pincodes (625001–625708). Try a nearby 625xxx pincode or your area name.'
+                      : 'Try a different spelling, or a 625xxx pincode.'}
+                  </Text>
+                </View>
               ) : (
-                results.map((loc) => (
-                  <Pressable
-                    key={`${loc.pincode}-${loc.name}`}
-                    accessibilityRole="button"
-                    onPress={() => {
-                      onSelect(loc);
-                      setOpen(false);
-                      setQuery('');
-                    }}
-                    className="px-5 py-4 border-b border-border"
-                  >
-                    <Text className="text-foreground font-sans">{loc.name}</Text>
-                    <Text className="text-muted-fg text-xs font-mono mt-0.5">{loc.pincode}</Text>
-                  </Pressable>
-                ))
+                <>
+                  {!trimmed ? (
+                    <Text className="text-muted-fg text-xs uppercase tracking-wide px-5 pt-3 pb-1">
+                      Popular areas
+                    </Text>
+                  ) : null}
+                  {results.map((loc) => (
+                    <Pressable
+                      key={`${loc.pincode}-${loc.name}`}
+                      accessibilityRole="button"
+                      onPress={() => {
+                        onSelect(loc);
+                        setOpen(false);
+                        setQuery('');
+                      }}
+                      className="px-5 py-4 border-b border-border"
+                    >
+                      <Text className="text-foreground font-sans">{loc.name}</Text>
+                      <Text className="text-muted-fg text-xs font-mono mt-0.5">{loc.pincode}</Text>
+                    </Pressable>
+                  ))}
+                </>
               )}
             </ScrollView>
           </View>

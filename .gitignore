@@ -42,3 +42,10 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# logs & local artifacts
+expo-dev.err.log
+backend.log
+qr.png
+qr.txt
+.idea/

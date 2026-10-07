@@ -80,7 +80,7 @@ export function useUpdateWorkerProfile() {
       pincode?: string;
       area?: string;
       bio?: string;
-    }) => updateWorkerProfileApi(userId, { categorySkills, availableSlots, address, pincode, area }),
+    }) => updateWorkerProfileApi(userId, { categorySkills, availableSlots, address, pincode, area, bio }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['workerProfile'] });
       void qc.invalidateQueries({ queryKey: ['nearbyWorkers'] });

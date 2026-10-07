@@ -7,6 +7,7 @@ import {
   Lock,
   Paintbrush,
   Plug,
+  Shapes,
   Snowflake,
   Sparkles,
   type LucideIcon,
@@ -23,6 +24,7 @@ const ICONS: Record<ServiceCategory, LucideIcon> = {
   Locksmith: Lock,
   'AC / HVAC': Snowflake,
   General: Brush,
+  Other: Shapes,
 };
 
 export function CategoryIcon({ category, size = 18, color = '#7A1B1C' }: { category: string; size?: number; color?: string }) {

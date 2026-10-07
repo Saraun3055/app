@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, type PressableProps, type ViewStyle } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
 import { colors } from '@/constants/theme';
 
@@ -42,14 +43,21 @@ export function Button({
   fullWidth = false,
   disabled,
   style,
+  onPress,
   ...rest
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+  const handlePress: PressableProps['onPress'] = (event) => {
+    if (isDisabled) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+    onPress?.(event);
+  };
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: !!isDisabled, busy: loading }}
       disabled={isDisabled}
+      onPress={handlePress}
       className={`rounded-md items-center justify-center ${PADDING[size]} ${CONTAINER[variant]} ${
         fullWidth ? 'w-full' : 'self-start'
       }`}

@@ -7,7 +7,9 @@ import { Chip } from '@/components/ui/Chip';
 import { PaymentBadge, StatusBadge } from '@/components/ui/Badge';
 import { RequestCard } from '@/components/RequestCard';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import { Stars } from '@/components/ui/Stars';
 import { useWorkerJobs } from '@/hooks/use-requests';
+import { useWorkerRatings } from '@/hooks/use-workers';
 import { colors } from '@/constants/theme';
 import { useAuthStore } from '@/stores/auth';
 
@@ -20,6 +22,7 @@ export default function WorkerJobs() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const { data, isLoading, refetch, isRefetching } = useWorkerJobs(user?.uid);
+  const { data: ratings } = useWorkerRatings(user?.uid);
   const [filter, setFilter] = useState<FilterKey>('All');
 
   const jobs = useMemo(() => {
@@ -83,28 +86,41 @@ export default function WorkerJobs() {
             }
           />
         ) : (
-          jobs.map((job) => (
-            <RequestCard
-              key={job.id}
-              request={job}
-              onPress={() => router.push(`/job/${job.id}`)}
-              footer={
-                <View className="flex-row items-center justify-between">
-                  {job.bill ? (
-                    <Text className="font-mono text-sm text-primary">
-                      ₹{job.bill.laborWage} labour
-                    </Text>
-                  ) : (
-                    <Text />
-                  )}
-                  <View className="flex-row items-center gap-2">
-                    <StatusBadge status={job.status} />
-                    <PaymentBadge status={job.paymentStatus} />
+          jobs.map((job) => {
+            const rating =
+              job.status === 'completed'
+                ? ratings?.find((r) => r.requestId === job.id)?.rating
+                : undefined;
+            return (
+              <RequestCard
+                key={job.id}
+                request={job}
+                onPress={() => router.push(`/job/${job.id}`)}
+                footer={
+                  <View>
+                    <View className="flex-row items-center justify-between">
+                      {job.bill ? (
+                        <Text className="font-mono text-sm text-primary">
+                          ₹{job.bill.laborWage} labour
+                        </Text>
+                      ) : (
+                        <Text />
+                      )}
+                      <View className="flex-row items-center gap-2">
+                        <StatusBadge status={job.status} />
+                        <PaymentBadge status={job.paymentStatus} />
+                      </View>
+                    </View>
+                    {typeof rating === 'number' ? (
+                      <View className="flex-row items-center mt-2">
+                        <Stars value={rating} size={13} showValue />
+                      </View>
+                    ) : null}
                   </View>
-                </View>
-              }
-            />
-          ))
+                }
+              />
+            );
+          })
         )}
       </View>
     </ScrollView>

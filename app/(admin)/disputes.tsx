@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { DisputeBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -55,6 +56,7 @@ function ResolveForm({ disputeId, onDone }: { disputeId: string; onDone: () => v
 }
 
 export default function AdminDisputes() {
+  const router = useRouter();
   const [filter, setFilter] = useState<DisputeStatus | ''>('open');
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const { data, isLoading, refetch, isRefetching } = useDisputes(filter);
@@ -107,8 +109,13 @@ export default function AdminDisputes() {
               <Text className="text-foreground text-sm">{dispute.description}</Text>
 
               <Text
-                className="text-muted-fg text-xs font-mono mt-3"
-                onPress={() => Alert.alert('Request', dispute.requestId)}
+                accessibilityRole="button"
+                className="text-muted-fg text-xs font-mono mt-3 underline"
+                onPress={() =>
+                  dispute.requestId
+                    ? router.push(`/(admin)/request/${dispute.requestId}`)
+                    : Alert.alert('Request', 'This dispute is not linked to a job.')
+                }
               >
                 Job {dispute.requestId.slice(0, 16)}…
               </Text>

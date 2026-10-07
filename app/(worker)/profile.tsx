@@ -30,6 +30,8 @@ export default function WorkerProfile() {
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [bio, setBio] = useState('');
   const [address, setAddress] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [area, setArea] = useState('');
   const [saving, setSaving] = useState(false);
 
   const [seedProfile, setSeedProfile] = useState(profile);
@@ -39,6 +41,8 @@ export default function WorkerProfile() {
     setSlots(profile?.availableSlots ?? []);
     setBio(profile?.bio ?? '');
     setAddress(profile?.address ?? '');
+    setPincode(profile?.pincode ?? '');
+    setArea(profile?.area ?? '');
   }
 
   const dirty = useMemo(() => {
@@ -47,9 +51,11 @@ export default function WorkerProfile() {
       JSON.stringify(skills) !== JSON.stringify(profile.categorySkills ?? []) ||
       JSON.stringify(slots) !== JSON.stringify(profile.availableSlots ?? []) ||
       bio !== (profile.bio ?? '') ||
-      address !== (profile.address ?? '')
+      address !== (profile.address ?? '') ||
+      pincode !== (profile.pincode ?? '') ||
+      area !== (profile.area ?? '')
     );
-  }, [skills, slots, bio, address, profile]);
+  }, [skills, slots, bio, address, pincode, area, profile]);
 
   const toggleSkill = (category: string) => {
     setSkills((prev) =>
@@ -79,9 +85,9 @@ export default function WorkerProfile() {
         categorySkills: skills,
         availableSlots: slots,
         address: address.trim() || undefined,
-        pincode: profile?.pincode,
-        area: profile?.area,
-        bio: bio.trim() || undefined,
+        pincode: pincode.trim() || undefined,
+        area: area.trim() || undefined,
+        bio: bio.trim(),
       });
       if (ok) Alert.alert('Profile saved', 'Customers can now see your updated skills and slots.');
       else Alert.alert('Could not save', 'Please try again.');
@@ -229,10 +235,12 @@ export default function WorkerProfile() {
             placeholderTextColor={colors.mutedFg}
           />
           <PincodePicker
-            value={profile?.pincode ?? null}
+            value={pincode || null}
             label="Service area pincode"
             onSelect={(loc: MaduraiLocation) => {
               setAddress(loc.name);
+              setPincode(loc.pincode);
+              setArea(loc.name);
             }}
           />
         </View>

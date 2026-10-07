@@ -185,6 +185,7 @@ export const CATEGORY_LIST = [
   'Locksmith',
   'AC / HVAC',
   'General',
+  'Other',
 ] as const
 
 export type ServiceCategory = (typeof CATEGORY_LIST)[number]
@@ -238,6 +239,7 @@ export const SUBCATEGORIES_MAP: Record<ServiceCategory, string[]> = {
     'General home maintenance',
     'Curtain rod installation',
   ],
+  Other: [],
 }
 
 export const STATUS_LABEL: Record<RequestStatus, string> = {

@@ -45,6 +45,7 @@ export default function RequestDetail() {
       ? {
           title: STATUS_HEADLINE[next.status] ?? 'Request updated',
           body: `${next.title} — ${STATUS_LABEL[next.status]}`,
+          url: `/(customer)/requests/${next.id}`,
         }
       : null;
 

@@ -3,8 +3,14 @@ import { Tabs } from 'expo-router';
 import { LayoutDashboard, Inbox, History, BadgeCheck, UserRound } from 'lucide-react-native';
 
 import { colors } from '@/constants/theme';
+import { useWorkerIncoming } from '@/hooks/use-requests';
+import { useAuthStore } from '@/stores/auth';
 
 export default function WorkerLayout() {
+  const user = useAuthStore((s) => s.user);
+  const { data: incoming } = useWorkerIncoming(user?.uid);
+  const pendingCount = incoming?.length ?? 0;
+
   return (
     <Tabs
       screenOptions={{
@@ -27,7 +33,11 @@ export default function WorkerLayout() {
       />
       <Tabs.Screen
         name="incoming"
-        options={{ title: 'Incoming', tabBarIcon: ({ color, size }) => <Inbox size={size} color={color} /> }}
+        options={{
+          title: 'Incoming',
+          tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
+          tabBarIcon: ({ color, size }) => <Inbox size={size} color={color} />,
+        }}
       />
       <Tabs.Screen
         name="jobs"
@@ -35,11 +45,19 @@ export default function WorkerLayout() {
       />
       <Tabs.Screen
         name="verification"
-        options={{ title: 'Verify', tabBarIcon: ({ color, size }) => <BadgeCheck size={size} color={color} /> }}
+        options={{
+          title: 'Verify',
+          href: '/(worker)/verification',
+          tabBarIcon: ({ color, size }) => <BadgeCheck size={size} color={color} />,
+        }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <UserRound size={size} color={color} /> }}
+        options={{
+          title: 'Profile',
+          href: '/(worker)/profile',
+          tabBarIcon: ({ color, size }) => <UserRound size={size} color={color} />,
+        }}
       />
       <Tabs.Screen name="job/[id]" options={{ title: 'Job', href: null }} />
     </Tabs>

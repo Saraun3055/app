@@ -1,10 +1,17 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { LayoutDashboard, ShieldCheck, ListChecks, Scale, Users, ScrollText } from 'lucide-react-native';
+import { LayoutDashboard, ShieldCheck, ListChecks, Scale, Users, ScrollText, UserRound } from 'lucide-react-native';
 
+import { useActiveStats, useVerificationQueue } from '@/hooks/use-admin';
 import { colors } from '@/constants/theme';
 
 export default function AdminLayout() {
+  const { data: pendingVerifications } = useVerificationQueue('pending');
+  const { data: activeStats } = useActiveStats();
+
+  const verificationBadge = pendingVerifications?.length ? String(pendingVerifications.length) : undefined;
+  const requestsBadge = activeStats?.total ? String(activeStats.total) : undefined;
+
   return (
     <Tabs
       screenOptions={{
@@ -26,12 +33,18 @@ export default function AdminLayout() {
         name="verification"
         options={{
           title: 'Verify',
+          href: '/(admin)/verification',
+          tabBarBadge: verificationBadge,
           tabBarIcon: ({ color, size }) => <ShieldCheck size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="requests"
-        options={{ title: 'Requests', tabBarIcon: ({ color, size }) => <ListChecks size={size} color={color} /> }}
+        options={{
+          title: 'Requests',
+          tabBarBadge: requestsBadge,
+          tabBarIcon: ({ color, size }) => <ListChecks size={size} color={color} />,
+        }}
       />
       <Tabs.Screen
         name="disputes"
@@ -46,7 +59,14 @@ export default function AdminLayout() {
         options={{ title: 'Audit', tabBarIcon: ({ color, size }) => <ScrollText size={size} color={color} /> }}
       />
       <Tabs.Screen name="request/[id]" options={{ title: 'Request', href: null }} />
-      <Tabs.Screen name="profile" options={{ href: null }} />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          href: '/(admin)/profile',
+          tabBarIcon: ({ color, size }) => <UserRound size={size} color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
